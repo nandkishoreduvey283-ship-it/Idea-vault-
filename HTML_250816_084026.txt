@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idea Vault - Secure Your Creative Sparks</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@lukepeavey/salt"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --safe-color: #4f46e5;
+            --safe-dark: #3730a3;
+            --safe-light: #a5b4fc;
+        }
+        
+        body {
+            font-family: 'Raleway', sans-serif;
+            background-color: #f8fafc;
+            min-height: 100vh;
+        }
+        
+        .vault-door {
+            background: linear-gradient(145deg, #1e293b, #334155);
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            position: relative;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        
+        .vault-handle {
+            width: 30px;
+            height: 30px;
+            background-color: gold;
+            border-radius: 50%;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .vault-lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle, transparent 30%, rgba(255,215,0,0.2) 30%, transparent 32%),
+                repeating-radial-gradient(circle, #334155 0 1px, transparent 1px 10%);
+            background-size: 100% 100%;
+        }
+        
+        .idea-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            background: linear-gradient(to right, white 97%, var(--safe-light) 100%);
+        }
+        
+        .vault-animation {
+            animation: vaultOpen 1.5s ease-out forwards;
+        }
+        
+        @keyframes vaultOpen {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(180deg); }
+        }
+        
+        .category-tag {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+        
+        .category-tag::before {
+            content: "";
+            position: absolute;
+            left: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+        }
+        
+        .business::before { background-color: #4f46e5; }
+        .technology::before { background-color: #3b82f6; }
+        .creative::before { background-color: #8b5cf6; }
+        .personal::before { background-color: #10b981; }
+
+        #speech-recognition {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        #speech-recognition.listening {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(79, 70, 229, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20 bg-gradient-to-br from-gray-50 to-indigo-50">
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="vault-door">
+                        <div class="vault-lines"></div>
+                        <div class="vault-handle" id="vault-handle"></div>
+                    </div>
+                    <h1 class="text-2xl font-bold text-indigo-900">Idea Vault</h1>
+                </div>
+                <button id="help-btn" class="p-2 rounded-full hover:bg-gray-100">
+                    <img src="https://placehold.co/24x24" alt="Question mark icon for help" />
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6 max-w-4xl">
+        <!-- Stats Overview -->
+        <section class="mb-8 p-4 bg-white rounded-xl shadow-sm">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="p-3 rounded-lg bg-indigo-50">
+                    <p class="text-sm text-indigo-700">Total Ideas</p>
+                    <p class="text-2xl font-bold text-indigo-900" id="total-ideas">0</p>
+                </div>
+                <div class="p-3 rounded-lg bg-blue-50">
+                    <p class="text-sm text-blue-700">This Week</p>
+                    <p class="text-2xl font-bold text-blue-900" id="week-ideas">0</p>
+                </div>
+                <div class="p-3 rounded-lg bg-purple-50">
+                    <p class="text-sm text-purple-700">Creative</p>
+                    <p class="text-2xl font-bold text-purple-900" id="creative-count">0</p>
+                </div>
+                <div class="p-3 rounded-lg bg-green-50">
+                    <p class="text-sm text-green-700">Business</p>
+                    <p class="text-2xl font-bold text-green-900" id="business-count">0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Idea Input Section -->
+        <section class="mb-10 bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300">
+            <div class="p-1 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">Deposit New Idea</h2>
+                    <button id="voice-btn" class="p-2 rounded-full bg-indigo-100 hover:bg-indigo-200">
+                        <img src="https://placehold.co/24x24" alt="Microphone icon for voice input" />
+                    </button>
+                </div>
+                
+                <form id="idea-form" class="space-y-4">
+                    <div>
+                        <label for="idea-title" class="block text-sm font-medium text-gray-700 mb-1">Idea Title</label>
+                        <input type="text" id="idea-title" placeholder="Your brilliant idea in one line..." 
+                               class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label for="idea-description" class="block text-sm font-medium text-gray-700 mb-1">Detailed Description</label>
+                        <textarea id="idea-description" rows="4" placeholder="Unlock your thoughts here..." 
+                                 class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Secure in Category</label>
+                        <div class="flex flex-wrap gap-2">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="category" value="business" class="sr-only peer" checked>
+                                <span class="category-tag business px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full peer-checked:bg-indigo-600 peer-checked:text-white cursor-pointer">Business</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="category" value="technology" class="sr-only peer">
+                                <span class="category-tag technology px-3 py-1 bg-blue-100 text-blue-800 rounded-full peer-checked:bg-blue-600 peer-checked:text-white cursor-pointer">Technology</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="category" value="creative" class="sr-only peer">
+                                <span class="category-tag creative px-3 py-1 bg-purple-100 text-purple-800 rounded-full peer-checked:bg-purple-600 peer-checked:text-white cursor-pointer">Creative</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="category" value="personal" class="sr-only peer">
+                                <span class="category-tag personal px-3 py-1 bg-green-100 text-green-800 rounded-full peer-checked:bg-green-600 peer-checked:text-white cursor-pointer">Personal</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-105 font-medium">
+                            Lock in Vault
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        
+        <!-- Idea Collection -->
+        <section>
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">Your Idea Collection</h3>
+                <div class="flex space-x-2">
+                    <button id="sort-date" class="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center">
+                        <img src="https://placehold.co/16x16" alt="Calendar icon" class="mr-1" /> Date
+                    </button>
+                    <button id="sort-category" class="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center">
+                        <img src="https://placehold.co/16x16" alt="Category icon" class="mr-1" /> Category
+                    </button>
+                </div>
+            </div>
+            
+            <div id="ideas-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Idea cards will be dynamically inserted here -->
+                <div class="idea-card bg-white rounded-xl shadow p-5 flex flex-col">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="category-tag business inline-block px-2 py-1 text-xs rounded-full bg-indigo-100 text-indigo-800 mb-1">
+                                Business
+                            </span>
+                            <h4 class="font-bold text-lg">Sample Business Idea</h4>
+                        </div>
+                        <div class="text-xs text-gray-500">Just now</div>
+                    </div>
+                    <p class="text-gray-600 mb-3 flex-grow">This is an example idea card that will be replaced with your actual ideas when you start adding them.</p>
+                    <div class="flex justify-between items-center">
+                        <button class="edit-btn text-indigo-600 hover:text-indigo-800 text-sm" data-id="1">Edit</button>
+                        <button class="delete-btn text-gray-400 hover:text-red-500 text-sm" data-id="1">
+                            <img src="https://placehold.co/16x16" alt="Trash can icon for deleting idea" class="inline-block" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Voice Recognition Button -->
+    <div id="speech-recognition">
+        <img src="https://placehold.co/24x24" alt="Microphone icon" />
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl p-6 max-w-md mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Idea Vault Guide</h3>
+                <button id="close-help" class="p-2 rounded-full hover:bg-gray-100">
+                    <img src="https://placehold.co/24x24" alt="Close icon" />
+                </button>
+            </div>
+            <div class="space-y-3 text-gray-600">
+                <p><strong>To add an idea:</strong> Fill the form and click "Lock in Vault"</p>
+                <p><strong>To edit:</strong> Click the Edit button on any idea card</p>
+                <p><strong>To delete:</strong> Click the trash icon on any idea card</p>
+                <p><strong>Voice input:</strong> Tap the microphone button to record</p>
+                <p>Your ideas are saved automatically in your browser.</p>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <button id="get-started" class="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const ideaForm = document.getElementById('idea-form');
+        const ideasContainer = document.getElementById('ideas-container');
+        const vaultHandle = document.getElementById('vault-handle');
+        const helpBtn = document.getElementById('help-btn');
+        const helpModal = document.getElementById('help-modal');
+        const closeHelp = document.getElementById('close-help');
+        const getStarted = document.getElementById('get-started');
+        const voiceBtn = document.getElementById('voice-btn');
+        const speechRecognitionBtn = document.getElementById('speech-recognition');
+        const totalIdeas = document.getElementById('total-ideas');
+        const weekIdeas = document.getElementById('week-ideas');
+        const creativeCount = document.getElementById('creative-count');
+        const businessCount = document.getElementById('business-count');
+        
+        // Initialize data
+        let ideas = JSON.parse(localStorage.getItem('ideaVault')) || [];
+
+        // Initialize the app
+        function init() {
+            renderIdeas();
+            updateStats();
+            setupEventListeners();
+            // Animate vault handle on first load
+            setTimeout(() => {
+                vaultHandle.classList.add('vault-animation');
+            }, 500);
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Form submission
+            ideaForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const title = document.getElementById('idea-title').value;
+                const description = document.getElementById('idea-description').value;
+                const category = document.querySelector('input[name="category"]:checked').value;
+                
+                if (title && description) {
+                    const newIdea = {
+                        id: Date.now(),
+                        title,
+                        description,
+                        category,
+                        date: new Date()
+                    };
+                    
+                    ideas.unshift(newIdea);
+                    saveIdeas();
+                    renderIdeas();
+                    updateStats();
+                    ideaForm.reset();
+                    
+                    // Animate vault handle
+                    vaultHandle.classList.remove('vault-animation');
+                    void vaultHandle.offsetWidth; // Trigger reflow
+                    vaultHandle.classList.add('vault-animation');
+                }
+            });
+            
+            // Help modal
+            helpBtn.addEventListener('click', () => {
+                helpModal.classList.remove('hidden');
+            });
+            
+            closeHelp.addEventListener('click', () => {
+                helpModal.classList.add('hidden');
+            });
+            
+            getStarted.addEventListener('click', () => {
+                helpModal.classList.add('hidden');
+            });
+            
+            // Voice recognition
+            if ('webkitSpeechRecognition' in window) {
+                const recognition = new webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                
+                speechRecognitionBtn.addEventListener('click', () => {
+                    recognition.start();
+                    speechRecognitionBtn.classList.add('listening');
+                });
+                
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    const description = document.getElementById('idea-description');
+                    description.value = transcript;
+                    speechRecognitionBtn.classList.remove('listening');
+                };
+                
+                recognition.onerror = () => {
+                    speechRecognitionBtn.classList.remove('listening');
+                };
+                
+                recognition.onend = () => {
+                    speechRecognitionBtn.classList.remove('listening');
+                };
+            } else {
+                speechRecognitionBtn.style.display = 'none';
+            }
+            
+            // Sort buttons
+            document.getElementById('sort-date').addEventListener('click', () => {
+                ideas.sort((a, b) => b.date - a.date);
+                renderIdeas();
+            });
+            
+            document.getElementById('sort-category').addEventListener('click', () => {
+                ideas.sort((a, b) => a.category.localeCompare(b.category));
+                renderIdeas();
+            });
+        }
+
+        // Render all ideas
+        function renderIdeas() {
+            ideasContainer.innerHTML = '';
+            
+            if (ideas.length === 0) {
+                ideasContainer.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <img src="https://placehold.co/200x200" alt="Empty vault with open door showing nothing inside" class="mx-auto mb-4 opacity-50" />
+                        <p class="text-gray-500">Your vault is empty. Deposit your first idea!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            ideas.forEach(idea => {
+                const categoryClass = getCategoryClass(idea.category);
+                const dateString = formatDate(idea.date);
+                
+                const ideaElement = document.createElement('div');
+                ideaElement.className = 'idea-card bg-white rounded-xl shadow p-5 flex flex-col';
+                ideaElement.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="category-tag ${idea.category} inline-block px-2 py-1 text-xs rounded-full ${categoryClass.bg} ${categoryClass.text} mb-1">
+                                ${categoryClass.label}
+                            </span>
+                            <h4 class="font-bold text-lg">${idea.title}</h4>
+                        </div>
+                        <div class="text-xs text-gray-500">${dateString}</div>
+                    </div>
+                    <p class="text-gray-600 mb-3 flex-grow">${idea.description}</p>
+                    <div class="flex justify-between items-center">
+                        <button class="edit-btn text-indigo-600 hover:text-indigo-800 text-sm" data-id="${idea.id}">Edit</button>
+                        <button class="delete-btn text-gray-400 hover:text-red-500 text-sm" data-id="${idea.id}">
+                            <img src="https://placehold.co/16x16" alt="Trash can icon for deleting idea ${idea.title}" class="inline-block" />
+                        </button>
+                    </div>
+                `;
+                
+                ideasContainer.appendChild(ideaElement);
+            });
+            
+            // Add event listeners to edit and delete buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const ideaId = parseInt(this.getAttribute('data-id'));
+                    editIdea(ideaId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const ideaId = parseInt(this.getAttribute('data-id'));
+                    deleteIdea(ideaId);
+                });
+            });
+        }
+
+        // Edit an idea
+        function editIdea(id) {
+            const idea = ideas.find(idea => idea.id === id);
+            if (!idea) return;
+            
+            document.getElementById('idea-title').value = idea.title;
+            document.getElementById('idea-description').value = idea.description;
+            document.querySelector(`input[name="category"][value="${idea.category}"]`).checked = true;
+            
+            // Remove the idea from the array
+            ideas = ideas.filter(idea => idea.id !== id);
+            saveIdeas();
+            renderIdeas();
+            updateStats();
+        }
+
+        // Delete an idea
+        function deleteIdea(id) {
+            if (confirm('Are you sure you want to permanently delete this idea from your vault?')) {
+                ideas = ideas.filter(idea => idea.id !== id);
+                saveIdeas();
+                renderIdeas();
+                updateStats();
+            }
+        }
+
+        // Save ideas to localStorage
+        function saveIdeas() {
+            localStorage.setItem('ideaVault', JSON.stringify(ideas));
+        }
+
+        // Update statistics
+        function updateStats() {
+            totalIdeas.textContent = ideas.length;
+            
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            const recentIdeas = ideas.filter(idea => new Date(idea.date) > oneWeekAgo);
+            weekIdeas.textContent = recentIdeas.length;
+            
+            const creativeIdeas = ideas.filter(idea => idea.category === 'creative').length;
+            creativeCount.textContent = creativeIdeas;
+            
+            const businessIdeas = ideas.filter(idea => idea.category === 'business').length;
+            businessCount.textContent = businessIdeas;
+        }
+
+        // Get category styling
+        function getCategoryClass(category) {
+            const classes = {
+                business: { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'Business' },
+                technology: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Technology' },
+                creative: { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Creative' },
+                personal: { bg: 'bg-green-100', text: 'text-green-800', label: 'Personal' }
+            };
+            return classes[category] || classes.business;
+        }
+
+        // Format date for display
+        function formatDate(date) {
+            const now = new Date();
+            const diff = now - new Date(date);
+            const dayDiff = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (isNaN(dayDiff)) return '';
+            if (dayDiff === 0) return 'Today';
+            if (dayDiff === 1) return 'Yesterday';
+            if (dayDiff < 7) return `${dayDiff} days ago`;
+            if (dayDiff < 30) return `${Math.floor(dayDiff/7)} weeks ago`;
+            
+            return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
